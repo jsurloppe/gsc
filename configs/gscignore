@@ -1,0 +1,25 @@
+/etc/.git/
+/usr/src/
+/usr/portage/
+/etc/machine-id
+/etc/runlevels/
+/etc/shadow
+/etc/shadow-
+/etc/resolv.conf
+/etc/resolv.conf.head
+/etc/resolv.conf.tail
+/etc/sudoers
+/etc/sysctl.conf
+/etc/portage/
+# dev-perl/libwww
+/usr/bin/GET
+# dev-perl/libwww
+/usr/bin/HEAD
+# dev-perl/libwww
+/usr/bin/POST
+/etc/init.d/agetty.tty1
+/etc/init.d/agetty.tty2
+/etc/init.d/agetty.tty3
+/etc/init.d/agetty.tty4
+/etc/init.d/agetty.tty5
+/etc/init.d/agetty.tty6
