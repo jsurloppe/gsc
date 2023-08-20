@@ -61,16 +61,16 @@ func LoadIgnorePatterns(filesystem fs.FS, filename string) []string {
 	return patterns
 }
 
-func WalkSymlink(filesystem fs.FS, path string) (string, string, error) {
+func WalkSymlink(filesystem ExFS, path string) (string, string, error) {
 	var typ string
 	dir := filepath.Dir(path)
-	target, err := os.Readlink(path) // FIXME
+	target, err := filesystem.Readlink(path)
 	CheckErr(err)
 	if !filepath.IsAbs(target) {
 		target = filepath.Join(dir, target)
 	}
-	info, err := os.Lstat(target)         // FIXME
-	if err != nil && os.IsNotExist(err) { // FIXME
+	info, err := filesystem.Lstat(target)
+	if err != nil && os.IsNotExist(err) {
 		return target, "", ErrDeadLink
 	} else {
 		typ, err = GetItemType(info)
@@ -78,14 +78,15 @@ func WalkSymlink(filesystem fs.FS, path string) (string, string, error) {
 	}
 	return target, typ, nil
 }
-func BuildPackageMap(filesystem fs.FS) (entries map[string]*PkgItem) {
+
+func BuildPackageMap(filesystem fs.FS, dbPath string) (entries map[string]*PkgItem) {
 	entries = make(map[string]*PkgItem)
-	matches, err := fs.Glob(filesystem, "/var/db/pkg/*/*/CONTENTS")
+	matches, err := fs.Glob(filesystem, filepath.Join(dbPath, "/*/*/CONTENTS"))
 	CheckErr(err)
 	for _, match := range matches {
 		split := strings.Split(match, "/")
-		cat := split[4]
-		pkg := split[5]
+		cat := split[len(split)-3]
+		pkg := split[len(split)-2]
 		fd, err := filesystem.Open(match)
 		CheckErr(err)
 		defer fd.Close()

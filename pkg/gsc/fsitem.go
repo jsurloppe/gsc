@@ -17,7 +17,7 @@ type FsItem struct {
 	LinkState string
 }
 
-func NewFsItem(filesystem fs.FS, path string, info fs.FileInfo) *FsItem {
+func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) *FsItem {
 	typ, err := GetItemType(info)
 	CheckErr(err)
 

@@ -35,11 +35,11 @@ var rootCmd = &cobra.Command{
 		log.SetLevel(log.DebugLevel)
 		rootPath = args[0]
 
-		filesystem := os.DirFS(rootPath)
+		filesystem := gsc.ExDirFs(rootPath)
 
 		ignorePatterns := gsc.LoadIgnorePatterns(filesystem, *ignoreFile)
 
-		pkgItems := gsc.BuildPackageMap(filesystem)
+		pkgItems := gsc.BuildPackageMap(filesystem, "/var/db/pkg/")
 		log.Debug("db built")
 
 		files := make(map[string]*gsc.PkgItem)
