@@ -40,8 +40,8 @@ func GetItemType(info fs.FileInfo) (string, error) {
 }
 
 // loadIgnorePatterns loads patterns from a .gsyscheckignore file.
-func LoadIgnorePatterns(filename string) []string {
-	file, err := os.Open(filename)
+func LoadIgnorePatterns(filesystem fs.FS, filename string) []string {
+	file, err := filesystem.Open(filename)
 	CheckErr(err)
 	defer file.Close()
 
@@ -61,16 +61,16 @@ func LoadIgnorePatterns(filename string) []string {
 	return patterns
 }
 
-func WalkSymlink(path string) (string, string, error) {
+func WalkSymlink(filesystem fs.FS, path string) (string, string, error) {
 	var typ string
 	dir := filepath.Dir(path)
-	target, err := os.Readlink(path)
+	target, err := os.Readlink(path) // FIXME
 	CheckErr(err)
 	if !filepath.IsAbs(target) {
 		target = filepath.Join(dir, target)
 	}
-	info, err := os.Lstat(target)
-	if err != nil && os.IsNotExist(err) {
+	info, err := os.Lstat(target)         // FIXME
+	if err != nil && os.IsNotExist(err) { // FIXME
 		return target, "", ErrDeadLink
 	} else {
 		typ, err = GetItemType(info)
@@ -78,15 +78,15 @@ func WalkSymlink(path string) (string, string, error) {
 	}
 	return target, typ, nil
 }
-func BuildPackageMap() (entries map[string]*PkgItem) {
+func BuildPackageMap(filesystem fs.FS) (entries map[string]*PkgItem) {
 	entries = make(map[string]*PkgItem)
-	matches, err := filepath.Glob("/var/db/pkg/*/*/CONTENTS")
+	matches, err := fs.Glob(filesystem, "/var/db/pkg/*/*/CONTENTS")
 	CheckErr(err)
 	for _, match := range matches {
 		split := strings.Split(match, "/")
 		cat := split[4]
 		pkg := split[5]
-		fd, err := os.Open(match)
+		fd, err := filesystem.Open(match)
 		CheckErr(err)
 		defer fd.Close()
 
@@ -101,7 +101,7 @@ func BuildPackageMap() (entries map[string]*PkgItem) {
 	return
 }
 
-func IsExcluded(ignorePatterns []string, path string) bool {
+func IsExcluded(filesystem fs.FS, ignorePatterns []string, path string) bool {
 	for _, pattern := range ignorePatterns {
 		match, err := filepath.Match(filepath.Clean(pattern), path)
 		CheckErr(err)

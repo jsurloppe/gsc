@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/jsurloppe/gsc/pkg/gsc"
@@ -36,19 +35,21 @@ var rootCmd = &cobra.Command{
 		log.SetLevel(log.DebugLevel)
 		rootPath = args[0]
 
-		ignorePatterns := gsc.LoadIgnorePatterns(*ignoreFile)
+		filesystem := os.DirFS(rootPath)
 
-		pkgItems := gsc.BuildPackageMap()
+		ignorePatterns := gsc.LoadIgnorePatterns(filesystem, *ignoreFile)
+
+		pkgItems := gsc.BuildPackageMap(filesystem)
 		log.Debug("db built")
 
 		files := make(map[string]*gsc.PkgItem)
 
-		err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		err := fs.WalkDir(filesystem, rootPath, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			if gsc.IsExcluded(ignorePatterns, path) {
+			if gsc.IsExcluded(filesystem, ignorePatterns, path) {
 				switch {
 				case d.IsDir():
 					return fs.SkipDir
@@ -59,7 +60,7 @@ var rootCmd = &cobra.Command{
 
 			info, err := d.Info()
 			gsc.CheckErr(err)
-			fsItem := gsc.NewFsItem(path, info)
+			fsItem := gsc.NewFsItem(filesystem, path, info)
 
 			var pkgItem *gsc.PkgItem
 			var ok bool
@@ -88,7 +89,7 @@ var rootCmd = &cobra.Command{
 		gsc.CheckErr(err)
 
 		for _, pkgItem := range pkgItems {
-			if strings.HasPrefix(pkgItem.Path, rootPath) && !gsc.IsExcluded(ignorePatterns, pkgItem.Path) {
+			if strings.HasPrefix(pkgItem.Path, rootPath) && !gsc.IsExcluded(filesystem, ignorePatterns, pkgItem.Path) {
 				if _, ok := files[pkgItem.Path]; !ok {
 					log.WithFields(log.Fields{"file": pkgItem.Path, "cat": pkgItem.Cat, "pkg": pkgItem.Pkg}).Error("missing file")
 				}

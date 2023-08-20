@@ -17,7 +17,7 @@ type FsItem struct {
 	LinkState string
 }
 
-func NewFsItem(path string, info fs.FileInfo) *FsItem {
+func NewFsItem(filesystem fs.FS, path string, info fs.FileInfo) *FsItem {
 	typ, err := GetItemType(info)
 	CheckErr(err)
 
@@ -26,7 +26,7 @@ func NewFsItem(path string, info fs.FileInfo) *FsItem {
 
 	if typ == TYPE_SYMLINK {
 		linkState = LINK_STATE_VALID
-		target, targetType, err = WalkSymlink(path)
+		target, targetType, err = WalkSymlink(filesystem, path)
 		if err == ErrDeadLink {
 			linkState = LINK_STATE_DEAD
 		} else if err != nil {
@@ -34,7 +34,7 @@ func NewFsItem(path string, info fs.FileInfo) *FsItem {
 		}
 
 		for linkState == LINK_STATE_VALID && targetType == TYPE_SYMLINK {
-			target, targetType, err = WalkSymlink(target)
+			target, targetType, err = WalkSymlink(filesystem, target)
 			if err == ErrDeadLink {
 				linkState = LINK_STATE_DEAD
 			}
