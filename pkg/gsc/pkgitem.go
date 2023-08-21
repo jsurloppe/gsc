@@ -3,9 +3,9 @@ package gsc
 import (
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type PkgItem struct {
@@ -15,47 +15,46 @@ type PkgItem struct {
 	Cat    string
 	Pkg    string
 	Md5    []byte
+	Mtime  time.Time
 }
 
-func NewPkgItem(cat, pkg, line string) (*PkgItem, error) {
+func NewPkgItem(cat, pkg, line string) (pkgItem *PkgItem, err error) {
 	split := strings.Split(line, " ")
 	typ := split[0]
+
+	var path, target string
+	var mtime time.Time
+	var md5 []byte
+
 	switch typ {
 	case TYPE_FILE:
-		path := strings.Join(split[1:len(split)-2], " ")
-		md5, err := hex.DecodeString(split[len(split)-2])
-		if err != nil {
-			log.Fatal(err)
-		}
-		return &PkgItem{
-			Typ:  typ,
-			Path: path,
-			Cat:  cat,
-			Pkg:  pkg,
-			Md5:  md5,
-		}, nil
+		path = strings.Join(split[1:len(split)-2], " ")
+		md5, err = hex.DecodeString(split[len(split)-2])
+		CheckErr(err)
+		mtimeInt, err := strconv.ParseInt(split[len(split)-1], 10, 64)
+		CheckErr(err)
+		mtime = time.Unix(mtimeInt, 0)
 	case TYPE_DIRECTORY:
-		path := strings.Join(split[1:], " ")
-		return &PkgItem{
-			Typ:  typ,
-			Path: path,
-			Cat:  cat,
-			Pkg:  pkg,
-		}, nil
+		path = strings.Join(split[1:], " ")
 	case TYPE_SYMLINK:
-		path := strings.Join(split[1:len(split)-1], " ")
+		path = strings.Join(split[1:len(split)-1], " ")
 		symSlice := strings.Split(path, " -> ")
 		path = symSlice[0]
-		target := symSlice[1]
-
-		return &PkgItem{
-			Typ:    typ,
-			Path:   path,
-			Target: target,
-			Cat:    cat,
-			Pkg:    pkg,
-		}, nil
+		target = symSlice[1]
+		mtimeInt, err := strconv.ParseInt(split[len(split)-1], 10, 64)
+		CheckErr(err)
+		mtime = time.Unix(mtimeInt, 0)
 	default:
 		return nil, fmt.Errorf("invalid type %s/%s: %s", cat, pkg, line)
 	}
+
+	return &PkgItem{
+		Typ:    typ,
+		Path:   path,
+		Target: target,
+		Md5:    md5,
+		Cat:    cat,
+		Pkg:    pkg,
+		Mtime:  mtime,
+	}, nil
 }
