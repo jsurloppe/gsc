@@ -17,8 +17,9 @@ func init() {
 }
 
 var rootPath string
-var ignoreFile = flag.StringP("ignore-file", "i", "configs/gscignore", "file containing pattern to ignore")
+var ignoreFile = flag.StringP("ignore-file", "i", "", "file containing pattern to ignore")
 var versionFlag = flag.BoolP("version", "V", false, "show version and exit")
+var jsonFlag = flag.Bool("json", false, "show version and exit")
 
 func skipOnPermError(err error) bool {
 	if os.IsPermission(err) {
@@ -41,12 +42,20 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if *jsonFlag {
+			log.SetFormatter(&log.JSONFormatter{})
+		} else {
+			log.SetFormatter(&log.TextFormatter{})
+		}
 		log.SetLevel(log.DebugLevel)
 		rootPath = args[0]
 
 		filesystem := gsc.ExDirFs(rootPath)
 
-		ignorePatterns := gsc.LoadIgnorePatterns(filesystem, *ignoreFile)
+		var ignorePatterns []string
+		if *ignoreFile != "" {
+			ignorePatterns = gsc.LoadIgnorePatterns(filesystem, *ignoreFile)
+		}
 
 		pkgItems := gsc.BuildPackageMap(filesystem, "/var/db/pkg/")
 		log.Debug("db built")
@@ -103,7 +112,7 @@ var rootCmd = &cobra.Command{
 		for _, pkgItem := range pkgItems {
 			if strings.HasPrefix(pkgItem.Path, rootPath) && !gsc.IsExcluded(filesystem, ignorePatterns, pkgItem.Path) {
 				if _, ok := files[pkgItem.Path]; !ok {
-					log.WithFields(log.Fields{"file": pkgItem.Path, "cat": pkgItem.Cat, "pkg": pkgItem.Pkg}).Error("missing file")
+					log.WithFields(log.Fields{"file": pkgItem.Path, "cat": pkgItem.Cat, "pkg": pkgItem.Pkg}).Error("missing file or access problem")
 				}
 			}
 		}
