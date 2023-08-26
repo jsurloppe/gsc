@@ -1,0 +1,6 @@
+/etc/sysctl.conf
+
+/etc/portage/
+
+# dev-perl/libwww
+/usr/bin/GET

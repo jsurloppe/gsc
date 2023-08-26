@@ -3,6 +3,8 @@ package gsc
 import (
 	"encoding/hex"
 	"io/fs"
+	"os"
+	"reflect"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -33,7 +35,7 @@ sym /lib64/libeinfo.so -> libeinfo.so.1 1691333556
 		want map[string]*PkgItem
 	}{
 		{
-			name: "xyz",
+			name: "ContentParse",
 			args: args{
 				filesystem: fstest.MapFS(fsData),
 				dbPath:     "var/db/pkg/",
@@ -69,6 +71,39 @@ sym /lib64/libeinfo.so -> libeinfo.so.1 1691333556
 			got := BuildPackageMap(tt.args.filesystem, tt.args.dbPath)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("BuildPackageMap() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLoadIgnorePatterns(t *testing.T) {
+	type args struct {
+		filesystem fs.FS
+		filename   string
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "SyntaxCheck",
+			args: args{
+				filesystem: os.DirFS("testdata"),
+				filename:   "gscignore",
+			},
+			want: []string{
+				"/etc/sysctl.conf",
+				"/etc/portage/",
+				"/usr/bin/GET",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := LoadIgnorePatterns(tt.args.filesystem, tt.args.filename); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LoadIgnorePatterns() = %v, want %v", got, tt.want)
 			}
 		})
 	}
