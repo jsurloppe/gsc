@@ -20,6 +20,15 @@ var rootPath string
 var ignoreFile = flag.StringP("ignore-file", "i", "configs/gscignore", "file containing pattern to ignore")
 var versionFlag = flag.BoolP("version", "V", false, "show version and exit")
 
+func skipOnPermError(err error) bool {
+	if os.IsPermission(err) {
+		log.Error(err)
+		return true
+	}
+	gsc.CheckErr(err)
+	return false
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "gsc [path]",
 	Short: "Run Gentoo System Check on [path]",
@@ -45,10 +54,6 @@ var rootCmd = &cobra.Command{
 		files := make(map[string]*gsc.PkgItem)
 
 		err := fs.WalkDir(filesystem, rootPath, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
 			if gsc.IsExcluded(filesystem, ignorePatterns, path) {
 				switch {
 				case d.IsDir():
@@ -57,10 +62,17 @@ var rootCmd = &cobra.Command{
 					return nil
 				}
 			}
+			if skipOnPermError(err) {
+				return nil
+			}
 
 			info, err := d.Info()
 			gsc.CheckErr(err)
-			fsItem := gsc.NewFsItem(filesystem, path, info)
+
+			fsItem, err := gsc.NewFsItem(filesystem, path, info)
+			if skipOnPermError(err) {
+				return nil
+			}
 
 			var pkgItem *gsc.PkgItem
 			var ok bool

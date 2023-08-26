@@ -17,7 +17,7 @@ type FsItem struct {
 	LinkState string
 }
 
-func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) *FsItem {
+func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) (*FsItem, error) {
 	typ, err := GetItemType(info)
 	CheckErr(err)
 
@@ -42,7 +42,9 @@ func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) *FsItem {
 	}
 	if typ == TYPE_FILE {
 		file, err := os.Open(path)
-		CheckErr(err)
+		if os.IsPermission(err) {
+			return nil, err
+		}
 		defer file.Close()
 
 		hash := md5.New()
@@ -58,5 +60,5 @@ func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) *FsItem {
 		Md5:       md5b,
 		Info:      info,
 		LinkState: linkState,
-	}
+	}, nil
 }

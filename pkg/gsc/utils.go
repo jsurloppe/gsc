@@ -66,16 +66,19 @@ func WalkSymlink(filesystem ExFS, path string) (string, string, error) {
 	dir := filepath.Dir(path)
 	target, err := filesystem.Readlink(path)
 	CheckErr(err)
+
 	if !filepath.IsAbs(target) {
 		target = filepath.Join(dir, target)
 	}
+
 	info, err := filesystem.Lstat(target)
 	if err != nil && os.IsNotExist(err) {
 		return target, "", ErrDeadLink
-	} else {
-		typ, err = GetItemType(info)
-		CheckErr(err)
 	}
+
+	typ, err = GetItemType(info)
+	CheckErr(err)
+
 	return target, typ, nil
 }
 
