@@ -7,16 +7,18 @@ import (
 	"os"
 )
 
+// FsItem represents a file on the filesystem
 type FsItem struct {
-	Typ       string
-	Path      string
-	Target    string
-	Endtarget string
-	Md5       []byte
-	Info      fs.FileInfo
-	LinkState string
+	Typ       string      // object type
+	Path      string      // real path
+	Target    string      // target, only if typ is symlink
+	Endtarget string      // last no (valid) symlink recursive target
+	Md5       []byte      // checksum of the file if typ is obj (file)
+	Info      fs.FileInfo // file info
+	LinkState string      // state of the link if symlink
 }
 
+// NewFsItem create new FsItem from path and info
 func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) (*FsItem, error) {
 	typ, err := GetItemType(info)
 	CheckErr(err)
@@ -24,23 +26,23 @@ func NewFsItem(filesystem ExFS, path string, info fs.FileInfo) (*FsItem, error) 
 	var md5b []byte
 	var target, targetType, linkState, endTarget string
 
-	if typ == TYPE_SYMLINK {
-		linkState = LINK_STATE_VALID
+	if typ == TypeSymlink {
+		linkState = LinkStateValid
 		target, targetType, err = WalkSymlink(filesystem, path)
 		if err == ErrDeadLink {
-			linkState = LINK_STATE_DEAD
+			linkState = LinkStateDead
 		} else if err != nil {
 			CheckErr(err)
 		}
 
-		for linkState == LINK_STATE_VALID && targetType == TYPE_SYMLINK {
+		for linkState == LinkStateValid && targetType == TypeSymlink {
 			target, targetType, err = WalkSymlink(filesystem, target)
 			if err == ErrDeadLink {
-				linkState = LINK_STATE_DEAD
+				linkState = LinkStateDead
 			}
 		}
 	}
-	if typ == TYPE_FILE {
+	if typ == TypeFile {
 		file, err := os.Open(path)
 		if os.IsPermission(err) {
 			return nil, err

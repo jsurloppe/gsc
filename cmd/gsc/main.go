@@ -1,3 +1,27 @@
+/*
+GSC check Gentoo system consistency
+
+Gentoo System Check (GSC) use your local package database to check part of your system
+It reports files that were added/modified/deleted that differ from the database.
+
+It's normal to have files modified or added, but sometimes you ends with orphan files,
+dead symlinks, manually installed things that you forgot, ect...
+
+This tool helps to have a quick overview of your system and helps you to keep it clean.
+
+Usage:
+
+	gsc [flags] [path]
+
+The flags are:
+
+	    --json
+	        Print the logs as json, easier for parsing.
+	    -i
+			Use an ignore file to ignore some files or path.
+		-V
+			Print the version and exit
+*/
 package main
 
 import (
@@ -63,7 +87,7 @@ var rootCmd = &cobra.Command{
 		files := make(map[string]*gsc.PkgItem)
 
 		err := fs.WalkDir(filesystem, rootPath, func(path string, d fs.DirEntry, err error) error {
-			if gsc.IsExcluded(filesystem, ignorePatterns, path) {
+			if gsc.IsExcluded(ignorePatterns, path) {
 				switch {
 				case d.IsDir():
 					return fs.SkipDir
@@ -89,28 +113,23 @@ var rootCmd = &cobra.Command{
 			if pkgItem, ok = pkgItems[fsItem.Path]; ok {
 				files[pkgItem.Path] = pkgItem
 			}
-			// } else if pkgItem, ok = pkgItems[fsItem.target]; ok {
-			// 	files[pkgItem.target] = pkgItem
-			// }
 
 			switch {
-			case fsItem.Typ == gsc.TYPE_SYMLINK && fsItem.LinkState == gsc.LINK_STATE_DEAD:
+			case fsItem.Typ == gsc.TypeSymlink && fsItem.LinkState == gsc.LinkStateDead:
 				log.WithFields(log.Fields{"file": fsItem.Path}).Error("dead link")
 			case !ok:
 				log.WithFields(log.Fields{"file": fsItem.Path, "type": fsItem.Typ, "target": fsItem.Target}).Warn("file not in db")
 			case fsItem.Typ != pkgItem.Typ:
 				log.WithFields(log.Fields{"file": fsItem.Path, "fileType": fsItem.Typ, "pkgType": pkgItem.Typ, "target": fsItem.Target}).Error("different file type")
-			case fsItem.Typ == gsc.TYPE_FILE && !bytes.Equal(fsItem.Md5, pkgItem.Md5):
+			case fsItem.Typ == gsc.TypeFile && !bytes.Equal(fsItem.Md5, pkgItem.Md5):
 				log.WithFields(log.Fields{"file": fsItem.Path}).Warn("modified file")
-				// default:
-				// 	log.WithFields(log.Fields{"file": fsItem.path}).Info("ok")
 			}
 			return nil
 		})
 		gsc.CheckErr(err)
 
 		for _, pkgItem := range pkgItems {
-			if strings.HasPrefix(pkgItem.Path, rootPath) && !gsc.IsExcluded(filesystem, ignorePatterns, pkgItem.Path) {
+			if strings.HasPrefix(pkgItem.Path, rootPath) && !gsc.IsExcluded(ignorePatterns, pkgItem.Path) {
 				if _, ok := files[pkgItem.Path]; !ok {
 					log.WithFields(log.Fields{"file": pkgItem.Path, "cat": pkgItem.Cat, "pkg": pkgItem.Pkg}).Error("missing file or access problem")
 				}

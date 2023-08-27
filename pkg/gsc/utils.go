@@ -11,35 +11,47 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const TYPE_FILE = "obj"
-const TYPE_DIRECTORY = "dir"
-const TYPE_SYMLINK = "sym"
-const LINK_STATE_VALID = "valid"
-const LINK_STATE_DEAD = "dead"
+// TypeFile represents a file in portage
+const TypeFile = "obj"
 
-var ErrDeadLink = errors.New(LINK_STATE_DEAD)
+// TypeDirectory represents a directory in portage
+const TypeDirectory = "dir"
 
+// TypeSymlink represents a symlink in portage
+const TypeSymlink = "sym"
+
+// LinkStateValid is the valid state of a symlink
+const LinkStateValid = "valid"
+
+// LinkStateDead is the invalid state of a symlink
+const LinkStateDead = "dead"
+
+// ErrDeadLink is the error in case of dead link
+var ErrDeadLink = errors.New(LinkStateDead)
+
+// CheckErr check error, log and exit if err is not nil
 func CheckErr(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
+// GetItemType returns the portage type from a real file (info)
 func GetItemType(info fs.FileInfo) (string, error) {
 	mode := info.Mode()
 	switch {
 	case mode.IsRegular():
-		return TYPE_FILE, nil
+		return TypeFile, nil
 	case mode.IsDir():
-		return TYPE_DIRECTORY, nil
+		return TypeDirectory, nil
 	case mode&os.ModeSymlink != 0:
-		return TYPE_SYMLINK, nil
+		return TypeSymlink, nil
 	default:
 		return "", errors.New("invalid mode")
 	}
 }
 
-// loadIgnorePatterns loads patterns from a .gsyscheckignore file.
+// LoadIgnorePatterns loads patterns from a .gscignore file.
 func LoadIgnorePatterns(filesystem fs.FS, filename string) []string {
 	file, err := filesystem.Open(filename)
 	CheckErr(err)
@@ -61,6 +73,7 @@ func LoadIgnorePatterns(filesystem fs.FS, filename string) []string {
 	return patterns
 }
 
+// WalkSymlink walks through a symlink
 func WalkSymlink(filesystem ExFS, path string) (string, string, error) {
 	var typ string
 	dir := filepath.Dir(path)
@@ -82,6 +95,8 @@ func WalkSymlink(filesystem ExFS, path string) (string, string, error) {
 	return target, typ, nil
 }
 
+// BuildPackageMap builds an map with path as key and PkgItem as value
+// of portage database content
 func BuildPackageMap(filesystem fs.FS, dbPath string) (entries map[string]*PkgItem) {
 	entries = make(map[string]*PkgItem)
 	matches, err := fs.Glob(filesystem, filepath.Join(dbPath, "/*/*/CONTENTS"))
@@ -105,7 +120,8 @@ func BuildPackageMap(filesystem fs.FS, dbPath string) (entries map[string]*PkgIt
 	return
 }
 
-func IsExcluded(filesystem fs.FS, ignorePatterns []string, path string) bool {
+// IsExcluded checks if a path is excluded from check
+func IsExcluded(ignorePatterns []string, path string) bool {
 	for _, pattern := range ignorePatterns {
 		match, err := filepath.Match(filepath.Clean(pattern), path)
 		CheckErr(err)

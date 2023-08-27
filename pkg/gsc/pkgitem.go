@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// PkgItem represents as known as portage database
 type PkgItem struct {
 	Typ    string
 	Path   string
@@ -18,6 +19,7 @@ type PkgItem struct {
 	Mtime  time.Time
 }
 
+// NewPkgItem creates a PkgItem from a raw line of portage database
 func NewPkgItem(cat, pkg, line string) (pkgItem *PkgItem, err error) {
 	split := strings.Split(line, " ")
 	typ := split[0]
@@ -27,16 +29,16 @@ func NewPkgItem(cat, pkg, line string) (pkgItem *PkgItem, err error) {
 	var md5 []byte
 
 	switch typ {
-	case TYPE_FILE:
+	case TypeFile:
 		path = strings.Join(split[1:len(split)-2], " ")
 		md5, err = hex.DecodeString(split[len(split)-2])
 		CheckErr(err)
 		mtimeInt, err := strconv.ParseInt(split[len(split)-1], 10, 64)
 		CheckErr(err)
 		mtime = time.Unix(mtimeInt, 0)
-	case TYPE_DIRECTORY:
+	case TypeDirectory:
 		path = strings.Join(split[1:], " ")
-	case TYPE_SYMLINK:
+	case TypeSymlink:
 		path = strings.Join(split[1:len(split)-1], " ")
 		symSlice := strings.Split(path, " -> ")
 		path = symSlice[0]

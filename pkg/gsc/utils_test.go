@@ -42,7 +42,7 @@ sym /lib64/libeinfo.so -> libeinfo.so.1 1691333556
 			},
 			want: map[string]*PkgItem{
 				"/lib64/libeinfo.so.1": {
-					Typ:   TYPE_FILE,
+					Typ:   TypeFile,
 					Path:  "/lib64/libeinfo.so.1",
 					Cat:   "sys-apps",
 					Pkg:   "openrc-0.47.1",
@@ -50,7 +50,7 @@ sym /lib64/libeinfo.so -> libeinfo.so.1 1691333556
 					Mtime: time.Unix(1691333557, 0),
 				},
 				"/lib64/libeinfo.so": {
-					Typ:    TYPE_SYMLINK,
+					Typ:    TypeSymlink,
 					Path:   "/lib64/libeinfo.so",
 					Target: "libeinfo.so.1",
 					Cat:    "sys-apps",
@@ -58,7 +58,7 @@ sym /lib64/libeinfo.so -> libeinfo.so.1 1691333556
 					Mtime:  time.Unix(1691333556, 0),
 				},
 				"/lib64": {
-					Typ:  TYPE_DIRECTORY,
+					Typ:  TypeDirectory,
 					Path: "/lib64",
 					Cat:  "sys-apps",
 					Pkg:  "openrc-0.47.1",
