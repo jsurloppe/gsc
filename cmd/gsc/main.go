@@ -44,6 +44,7 @@ var rootPath string
 var ignoreFile = flag.StringP("ignore-file", "i", "", "file containing pattern to ignore")
 var versionFlag = flag.BoolP("version", "V", false, "show version and exit")
 var jsonFlag = flag.Bool("json", false, "show version and exit")
+var debugFlag = flag.Bool("debug", false, "set loglevel to debug")
 
 func skipOnPermError(err error) bool {
 	if os.IsPermission(err) {
@@ -71,7 +72,10 @@ var rootCmd = &cobra.Command{
 		} else {
 			log.SetFormatter(&log.TextFormatter{})
 		}
-		log.SetLevel(log.DebugLevel)
+
+		if *debugFlag {
+			log.SetLevel(log.DebugLevel)
+		}
 		rootPath = args[0]
 
 		filesystem := gsc.ExDirFs(rootPath)
