@@ -11,16 +11,16 @@ This tool helps to have a quick overview of your system and helps you to keep it
 
 Usage:
 
-	gsc [flags] [path]
+    gsc [flags] [path]
 
 The flags are:
 
-	    --json
-	        Print the logs as json, easier for parsing.
-	    -i
-			Use an ignore file to ignore some files or path.
-		-V
-			Print the version and exit
+    --json
+        Print the logs as json, easier for parsing.
+    -i
+	Use an ignore file to ignore some files or path.
+    -V
+	Print the version and exit
 */
 package main
 
